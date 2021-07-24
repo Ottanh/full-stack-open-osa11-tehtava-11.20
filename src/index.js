@@ -1,3 +1,4 @@
+require('dotenv').config()
 
 const express = require('express')
 const app = express()
@@ -13,6 +14,10 @@ const cors = require('cors')
 app.use(cors())
 
 app.use(express.static('build'))
+
+
+const Person = require('../models/person')
+
 
 let persons = [
     {
@@ -38,15 +43,20 @@ let persons = [
   ]
 
 app.get('/info', (req, res) => {
-  const date = new Date()    
-  res.send(
-      `<p>Phonebook has info for ${persons.length} people</p>
-      <p>${date}</p>
-      `)
+  const date = new Date()
+  Person.find({}).countDocuments().then(c => {
+    res.send(
+      `<p>Phonebook has info for ${c} people</p>
+      <p>${date}</p>`
+    )
+  })
+  
 })
 
-app.get('/api/persons', (req, res) => {
-  res.json(persons)
+app.get('/api/persons', (request, response) => {
+  Person.find({}).then(persons => {
+    response.json(persons)
+  })
 })
 
 app.get('/api/persons/:id', (request, response) => {
@@ -82,20 +92,24 @@ app.post('/api/persons', (request, response) => {
     })
   }
 
+  /*
   if (persons.find(person => person.name === body.name)) {
     return response.status(400).json({ 
       error: 'name is already in the phonebook' 
     })
-  }
+  }*/
 
-  const person = {
+  const person =  new Person({
     name: body.name,
-    number: body.number,
-    id: generateID(1000000)
-  }
+    number: body.number
+  })
 
-  persons = persons.concat(person)
-  response.json(persons)
+  person.save().then(savedPerson => {
+    response.json(savedPerson)
+  })
+
+  //persons = persons.concat(person)
+  //response.json(persons)
 })
 
 
