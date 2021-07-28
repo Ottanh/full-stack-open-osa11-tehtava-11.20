@@ -26,19 +26,19 @@ const person = new Person({
 
 
 
-if(process.argv[3] == undefined){
+if(process.argv[3] === undefined){
 
   console.log('phonebook:')
 
   Person.find({}).then(result => {
     result.forEach(person => {
       console.log(person.name, person.number)
-      })
+    })
     mongoose.connection.close()
   })
 }
 else {
-  person.save().then(response => {
+  person.save().then(() => {
     console.log('note saved!')
     mongoose.connection.close()
   })
