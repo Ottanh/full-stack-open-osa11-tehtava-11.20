@@ -1,0 +1,49 @@
+name: Deployment pipeline
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:    
+    branches: [master]    
+    types: [opened, synchronize]
+
+env:
+  COMMIT_MESSAGES: ${{ toJson(github.event.commits.*.message) }}
+
+jobs:
+  simple_deployment_pipeline:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+      - name: npm install 
+        run: npm install  
+      - name: lint        
+        run: npm run eslint
+      - name: build
+        run: npm run build
+      - name: test
+        run: npm test
+      - name: deploy
+        if: ${{ github.event_name == 'push' && !contains(join(env.COMMIT_MESSAGES), '#SKIP') }}
+        uses: akhileshns/heroku-deploy@v3.12.12 
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: "stormy-temple-01643" 
+          heroku_email: "ottanh@utu.fi"
+  tag_release:
+    needs: [simple_deployment_pipeline]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - name : Commit messages contains
+        run: echo ${{ !contains(join(env.COMMIT_MESSAGES), '#SKIP') }}
+      - name: Bump version and push tag
+        if: ${{ github.event_name == 'push' && !contains(join(env.COMMIT_MESSAGES), '#SKIP') }}
+        uses: anothrNick/github-tag-action@1.36.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BUMP: patch
